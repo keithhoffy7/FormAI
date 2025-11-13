@@ -1,6 +1,7 @@
 import dash
 from dash.dependencies import Output, Input
 from dash import dcc, html
+import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 import plotly.graph_objs as go
@@ -10,7 +11,14 @@ import os
 import math
 
 server = Flask(__name__)
-app = dash.Dash(__name__, server=server)
+app = dash.Dash(
+	__name__,
+	server=server,
+	external_stylesheets=[dbc.themes.BOOTSTRAP],
+	meta_tags=[
+		{"name": "viewport", "content": "width=device-width, initial-scale=1"}
+	]
+)
 
 MAX_DATA_POINTS = 1000
 UPDATE_FREQ_MS = 100
@@ -109,51 +117,133 @@ def _convert_gyro(v):
 		return float(v) * (math.pi / 180.0)
 	return float(v)
 
-app.layout = html.Div(
+app.layout = dbc.Container(
 	[
-		dcc.Markdown(
-			children="# Live Sensor Readings"
+		# Header/Navbar
+		dbc.Navbar(
+			dbc.Container(
+				[
+				dbc.NavbarBrand(
+					"FormAI - Exercise Form Analysis",
+					className="fs-4 fw-bold"
+				),
+					dbc.NavbarToggler(id="navbar-toggler"),
+				],
+				fluid=True
+			),
+			color="primary",
+			dark=True,
+			className="mb-4 shadow"
 		),
-		html.Div(
+		
+		# Main content
+		dbc.Row(
 			[
-				html.Div(
+				dbc.Col(
 					[
-						dcc.Markdown("### iPhone Accelerometer"),
-						dcc.Graph(id="iphone_accel_graph", style={"height": "40vh"}),
+						dbc.Card(
+							[
+							dbc.CardHeader(
+								"iPhone Accelerometer",
+								className="bg-primary text-white fw-bold"
+							),
+								dbc.CardBody(
+									[
+										dcc.Graph(
+											id="iphone_accel_graph",
+											config={"displayModeBar": False},
+											style={"height": "400px"}
+										)
+									]
+								)
+							],
+							className="mb-4 shadow-sm"
+						)
 					],
-					style={"flex": "1 1 48%", "minWidth": "420px"}
+					md=6,
+					className="mb-3"
 				),
-				html.Div(
+				dbc.Col(
 					[
-						dcc.Markdown("### iPhone Gyroscope"),
-						dcc.Graph(id="iphone_gyro_graph", style={"height": "40vh"}),
+						dbc.Card(
+							[
+							dbc.CardHeader(
+								"iPhone Gyroscope",
+								className="bg-info text-white fw-bold"
+							),
+								dbc.CardBody(
+									[
+										dcc.Graph(
+											id="iphone_gyro_graph",
+											config={"displayModeBar": False},
+											style={"height": "400px"}
+										)
+									]
+								)
+							],
+							className="mb-4 shadow-sm"
+						)
 					],
-					style={"flex": "1 1 48%", "minWidth": "420px"}
+					md=6,
+					className="mb-3"
 				),
-				html.Div(
+				dbc.Col(
 					[
-						dcc.Markdown("### Apple Watch Accelerometer"),
-						dcc.Graph(id="watch_accel_graph", style={"height": "40vh"}),
+						dbc.Card(
+							[
+							dbc.CardHeader(
+								"Apple Watch Accelerometer",
+								className="bg-success text-white fw-bold"
+							),
+								dbc.CardBody(
+									[
+										dcc.Graph(
+											id="watch_accel_graph",
+											config={"displayModeBar": False},
+											style={"height": "400px"}
+										)
+									]
+								)
+							],
+							className="mb-4 shadow-sm"
+						)
 					],
-					style={"flex": "1 1 48%", "minWidth": "420px"}
+					md=6,
+					className="mb-3"
 				),
-				html.Div(
+				dbc.Col(
 					[
-						dcc.Markdown("### Apple Watch Gyroscope"),
-						dcc.Graph(id="watch_gyro_graph", style={"height": "40vh"}),
+						dbc.Card(
+							[
+							dbc.CardHeader(
+								"Apple Watch Gyroscope",
+								className="bg-warning text-dark fw-bold"
+							),
+								dbc.CardBody(
+									[
+										dcc.Graph(
+											id="watch_gyro_graph",
+											config={"displayModeBar": False},
+											style={"height": "400px"}
+										)
+									]
+								)
+							],
+							className="mb-4 shadow-sm"
+						)
 					],
-					style={"flex": "1 1 48%", "minWidth": "420px"}
+					md=6,
+					className="mb-3"
 				),
 			],
-			style={
-				"display": "flex",
-				"flexWrap": "wrap",
-				"justifyContent": "space-between",
-				"gap": "12px",
-			}
+			className="g-3"
 		),
+		
+		# Hidden interval component for auto-updates
 		dcc.Interval(id="counter", interval=UPDATE_FREQ_MS),
-	]
+	],
+	fluid=True,
+	className="py-4"
 )
 
 
@@ -169,16 +259,31 @@ app.layout = html.Div(
 def update_graph(_counter):
 	# iPhone accelerometer graph
 	iphone_accel_data = [
-		go.Scatter(x=list(iphone_time_accel), y=list(d), name=name)
-		for d, name in zip([iphone_accel_x, iphone_accel_y, iphone_accel_z], ["Ax", "Ay", "Az"])
+		go.Scatter(
+			x=list(iphone_time_accel),
+			y=list(d),
+			name=name,
+			line=dict(width=2, color=color),
+			mode='lines'
+		)
+		for d, name, color in zip(
+			[iphone_accel_x, iphone_accel_y, iphone_accel_z],
+			["Ax", "Ay", "Az"],
+			["#FF6B6B", "#4ECDC4", "#45B7D1"]
+		)
 	]
 	iphone_accel_graph = {
 		"data": iphone_accel_data,
 		"layout": go.Layout(
 			{
-				"title": "iPhone Accelerometer",
-				"xaxis": {"type": "date"},
-				"yaxis": {"title": "Acceleration ms<sup>-2</sup>"},
+				"title": {"text": "iPhone Accelerometer", "font": {"size": 18}},
+				"xaxis": {"type": "date", "gridcolor": "#e0e0e0"},
+				"yaxis": {"title": "Acceleration (m/s²)", "gridcolor": "#e0e0e0"},
+				"plot_bgcolor": "white",
+				"paper_bgcolor": "white",
+				"font": {"family": "Arial, sans-serif"},
+				"hovermode": "x unified",
+				"legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1}
 			}
 		),
 	}
@@ -192,16 +297,31 @@ def update_graph(_counter):
 
 	# iPhone gyroscope graph
 	iphone_gyro_data = [
-		go.Scatter(x=list(iphone_time_gyro), y=list(d), name=name)
-		for d, name in zip([iphone_gyro_x, iphone_gyro_y, iphone_gyro_z], ["Gx", "Gy", "Gz"])
+		go.Scatter(
+			x=list(iphone_time_gyro),
+			y=list(d),
+			name=name,
+			line=dict(width=2, color=color),
+			mode='lines'
+		)
+		for d, name, color in zip(
+			[iphone_gyro_x, iphone_gyro_y, iphone_gyro_z],
+			["Gx", "Gy", "Gz"],
+			["#FF6B6B", "#4ECDC4", "#45B7D1"]
+		)
 	]
 	iphone_gyro_graph = {
 		"data": iphone_gyro_data,
 		"layout": go.Layout(
 			{
-				"title": "iPhone Gyroscope",
-				"xaxis": {"type": "date"},
-				"yaxis": {"title": "Angular velocity rad·s<sup>-1</sup>"},
+				"title": {"text": "iPhone Gyroscope", "font": {"size": 18}},
+				"xaxis": {"type": "date", "gridcolor": "#e0e0e0"},
+				"yaxis": {"title": "Angular Velocity (rad/s)", "gridcolor": "#e0e0e0"},
+				"plot_bgcolor": "white",
+				"paper_bgcolor": "white",
+				"font": {"family": "Arial, sans-serif"},
+				"hovermode": "x unified",
+				"legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1}
 			}
 		),
 	}
@@ -215,16 +335,31 @@ def update_graph(_counter):
 
 	# Apple Watch accelerometer graph
 	watch_accel_data = [
-		go.Scatter(x=list(watch_time_accel), y=list(d), name=name)
-		for d, name in zip([watch_accel_x, watch_accel_y, watch_accel_z], ["Ax", "Ay", "Az"])
+		go.Scatter(
+			x=list(watch_time_accel),
+			y=list(d),
+			name=name,
+			line=dict(width=2, color=color),
+			mode='lines'
+		)
+		for d, name, color in zip(
+			[watch_accel_x, watch_accel_y, watch_accel_z],
+			["Ax", "Ay", "Az"],
+			["#28A745", "#20C997", "#17A2B8"]
+		)
 	]
 	watch_accel_graph = {
 		"data": watch_accel_data,
 		"layout": go.Layout(
 			{
-				"title": "Apple Watch Accelerometer",
-				"xaxis": {"type": "date"},
-				"yaxis": {"title": "Acceleration ms<sup>-2</sup>"},
+				"title": {"text": "Apple Watch Accelerometer", "font": {"size": 18}},
+				"xaxis": {"type": "date", "gridcolor": "#e0e0e0"},
+				"yaxis": {"title": "Acceleration (m/s²)", "gridcolor": "#e0e0e0"},
+				"plot_bgcolor": "white",
+				"paper_bgcolor": "white",
+				"font": {"family": "Arial, sans-serif"},
+				"hovermode": "x unified",
+				"legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1}
 			}
 		),
 	}
@@ -238,16 +373,31 @@ def update_graph(_counter):
 
 	# Apple Watch gyroscope graph
 	watch_gyro_data = [
-		go.Scatter(x=list(watch_time_gyro), y=list(d), name=name)
-		for d, name in zip([watch_gyro_x, watch_gyro_y, watch_gyro_z], ["Gx", "Gy", "Gz"])
+		go.Scatter(
+			x=list(watch_time_gyro),
+			y=list(d),
+			name=name,
+			line=dict(width=2, color=color),
+			mode='lines'
+		)
+		for d, name, color in zip(
+			[watch_gyro_x, watch_gyro_y, watch_gyro_z],
+			["Gx", "Gy", "Gz"],
+			["#FFC107", "#FD7E14", "#DC3545"]
+		)
 	]
 	watch_gyro_graph = {
 		"data": watch_gyro_data,
 		"layout": go.Layout(
 			{
-				"title": "Apple Watch Gyroscope",
-				"xaxis": {"type": "date"},
-				"yaxis": {"title": "Angular velocity rad·s<sup>-1</sup>"},
+				"title": {"text": "Apple Watch Gyroscope", "font": {"size": 18}},
+				"xaxis": {"type": "date", "gridcolor": "#e0e0e0"},
+				"yaxis": {"title": "Angular Velocity (rad/s)", "gridcolor": "#e0e0e0"},
+				"plot_bgcolor": "white",
+				"paper_bgcolor": "white",
+				"font": {"family": "Arial, sans-serif"},
+				"hovermode": "x unified",
+				"legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1}
 			}
 		),
 	}
