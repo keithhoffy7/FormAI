@@ -1,0 +1,364 @@
+{
+  "timestamp": "20251203_164812",
+  "accuracy": 1.0,
+  "model_type": "RandomForestClassifier",
+  "feature_names": [
+    "phone_accel_mean",
+    "phone_accel_std",
+    "phone_accel_min",
+    "phone_accel_max",
+    "phone_accel_range",
+    "phone_accel_median",
+    "phone_accel_q25",
+    "phone_accel_q75",
+    "phone_accel_x_mean",
+    "phone_accel_x_std",
+    "phone_accel_x_max_abs",
+    "phone_accel_y_mean",
+    "phone_accel_y_std",
+    "phone_accel_y_max_abs",
+    "phone_accel_z_mean",
+    "phone_accel_z_std",
+    "phone_accel_z_max_abs",
+    "phone_gyro_mean",
+    "phone_gyro_std",
+    "phone_gyro_min",
+    "phone_gyro_max",
+    "phone_gyro_range",
+    "phone_gyro_median",
+    "phone_gyro_q25",
+    "phone_gyro_q75",
+    "phone_gyro_x_mean",
+    "phone_gyro_x_std",
+    "phone_gyro_x_max_abs",
+    "phone_gyro_y_mean",
+    "phone_gyro_y_std",
+    "phone_gyro_y_max_abs",
+    "phone_gyro_z_mean",
+    "phone_gyro_z_std",
+    "phone_gyro_z_max_abs",
+    "watch_accel_mean",
+    "watch_accel_std",
+    "watch_accel_min",
+    "watch_accel_max",
+    "watch_accel_range",
+    "watch_accel_median",
+    "watch_accel_q25",
+    "watch_accel_q75",
+    "watch_accel_x_mean",
+    "watch_accel_x_std",
+    "watch_accel_x_max_abs",
+    "watch_accel_y_mean",
+    "watch_accel_y_std",
+    "watch_accel_y_max_abs",
+    "watch_accel_z_mean",
+    "watch_accel_z_std",
+    "watch_accel_z_max_abs",
+    "watch_gyro_mean",
+    "watch_gyro_std",
+    "watch_gyro_min",
+    "watch_gyro_max",
+    "watch_gyro_range",
+    "watch_gyro_median",
+    "watch_gyro_q25",
+    "watch_gyro_q75",
+    "watch_gyro_x_mean",
+    "watch_gyro_x_std",
+    "watch_gyro_x_max_abs",
+    "watch_gyro_y_mean",
+    "watch_gyro_y_std",
+    "watch_gyro_y_max_abs",
+    "watch_gyro_z_mean",
+    "watch_gyro_z_std",
+    "watch_gyro_z_max_abs",
+    "duration",
+    "num_points",
+    "phone_watch_accel_corr"
+  ],
+  "feature_importance": [
+    {
+      "feature": "phone_gyro_q75",
+      "importance": 0.053536879805348964
+    },
+    {
+      "feature": "phone_accel_x_std",
+      "importance": 0.05105404999134266
+    },
+    {
+      "feature": "phone_gyro_x_std",
+      "importance": 0.0434727172476143
+    },
+    {
+      "feature": "phone_accel_std",
+      "importance": 0.039510342289381516
+    },
+    {
+      "feature": "phone_accel_z_mean",
+      "importance": 0.037014828201676835
+    },
+    {
+      "feature": "watch_accel_std",
+      "importance": 0.03504774758422836
+    },
+    {
+      "feature": "watch_accel_q75",
+      "importance": 0.030551504932460716
+    },
+    {
+      "feature": "phone_accel_median",
+      "importance": 0.02913285239358213
+    },
+    {
+      "feature": "phone_accel_y_mean",
+      "importance": 0.028252874459460037
+    },
+    {
+      "feature": "phone_accel_z_std",
+      "importance": 0.027860429910623995
+    },
+    {
+      "feature": "phone_accel_q25",
+      "importance": 0.02603375727980704
+    },
+    {
+      "feature": "watch_accel_x_max_abs",
+      "importance": 0.025911102113075388
+    },
+    {
+      "feature": "phone_accel_q75",
+      "importance": 0.025236137932986576
+    },
+    {
+      "feature": "watch_accel_z_std",
+      "importance": 0.024261331662872924
+    },
+    {
+      "feature": "phone_gyro_std",
+      "importance": 0.023503678043489216
+    },
+    {
+      "feature": "watch_gyro_y_max_abs",
+      "importance": 0.02305414692607382
+    },
+    {
+      "feature": "watch_accel_median",
+      "importance": 0.022741134047829684
+    },
+    {
+      "feature": "phone_accel_mean",
+      "importance": 0.0221666774729906
+    },
+    {
+      "feature": "watch_gyro_range",
+      "importance": 0.021887483833332097
+    },
+    {
+      "feature": "watch_accel_y_std",
+      "importance": 0.02145155427842382
+    },
+    {
+      "feature": "phone_gyro_max",
+      "importance": 0.021414112328851126
+    },
+    {
+      "feature": "phone_accel_x_max_abs",
+      "importance": 0.02042729201216662
+    },
+    {
+      "feature": "watch_accel_max",
+      "importance": 0.020283705470257755
+    },
+    {
+      "feature": "watch_accel_y_mean",
+      "importance": 0.019125127603650916
+    },
+    {
+      "feature": "watch_accel_range",
+      "importance": 0.018463492024564102
+    },
+    {
+      "feature": "watch_accel_x_std",
+      "importance": 0.01765733584117644
+    },
+    {
+      "feature": "phone_accel_z_max_abs",
+      "importance": 0.01743699654697305
+    },
+    {
+      "feature": "phone_gyro_x_max_abs",
+      "importance": 0.016591777193889157
+    },
+    {
+      "feature": "duration",
+      "importance": 0.01644308412074352
+    },
+    {
+      "feature": "phone_accel_y_std",
+      "importance": 0.0163812743610315
+    },
+    {
+      "feature": "phone_accel_min",
+      "importance": 0.015531713153482469
+    },
+    {
+      "feature": "watch_accel_z_max_abs",
+      "importance": 0.014754234687522788
+    },
+    {
+      "feature": "num_points",
+      "importance": 0.014599806049605202
+    },
+    {
+      "feature": "watch_accel_z_mean",
+      "importance": 0.0138523277222275
+    },
+    {
+      "feature": "phone_accel_range",
+      "importance": 0.013187576866516193
+    },
+    {
+      "feature": "phone_accel_x_mean",
+      "importance": 0.012779929291093197
+    },
+    {
+      "feature": "watch_gyro_std",
+      "importance": 0.012038518387030996
+    },
+    {
+      "feature": "watch_gyro_z_std",
+      "importance": 0.01202126013397734
+    },
+    {
+      "feature": "phone_accel_y_max_abs",
+      "importance": 0.01069805112205352
+    },
+    {
+      "feature": "watch_gyro_min",
+      "importance": 0.010320099995460203
+    },
+    {
+      "feature": "watch_accel_mean",
+      "importance": 0.009960627826001484
+    },
+    {
+      "feature": "watch_gyro_q75",
+      "importance": 0.008702305994394281
+    },
+    {
+      "feature": "watch_accel_min",
+      "importance": 0.00739865488369061
+    },
+    {
+      "feature": "phone_accel_max",
+      "importance": 0.006556856435666431
+    },
+    {
+      "feature": "phone_gyro_z_max_abs",
+      "importance": 0.006129101094146213
+    },
+    {
+      "feature": "phone_gyro_z_std",
+      "importance": 0.0033450815915092302
+    },
+    {
+      "feature": "phone_gyro_y_std",
+      "importance": 0.0033344971399638466
+    },
+    {
+      "feature": "phone_gyro_y_max_abs",
+      "importance": 0.003110924633412526
+    },
+    {
+      "feature": "watch_gyro_z_max_abs",
+      "importance": 0.002941732125150044
+    },
+    {
+      "feature": "phone_gyro_x_mean",
+      "importance": 0.002427154793194591
+    },
+    {
+      "feature": "phone_watch_accel_corr",
+      "importance": 0.00224265431270569
+    },
+    {
+      "feature": "watch_gyro_max",
+      "importance": 0.002190352020860495
+    },
+    {
+      "feature": "phone_gyro_z_mean",
+      "importance": 0.002110950593753577
+    },
+    {
+      "feature": "watch_gyro_median",
+      "importance": 0.0020730505889841977
+    },
+    {
+      "feature": "phone_gyro_min",
+      "importance": 0.0015916381911027589
+    },
+    {
+      "feature": "phone_gyro_q25",
+      "importance": 0.0015556173428634887
+    },
+    {
+      "feature": "phone_gyro_mean",
+      "importance": 0.0014035016008478957
+    },
+    {
+      "feature": "phone_gyro_range",
+      "importance": 0.0011581111207620372
+    },
+    {
+      "feature": "watch_gyro_y_std",
+      "importance": 0.001033685059044591
+    },
+    {
+      "feature": "phone_gyro_median",
+      "importance": 0.000944710228304972
+    },
+    {
+      "feature": "watch_gyro_x_mean",
+      "importance": 0.0009138861084194746
+    },
+    {
+      "feature": "watch_gyro_x_max_abs",
+      "importance": 0.0008996041741633682
+    },
+    {
+      "feature": "watch_accel_q25",
+      "importance": 0.0007912830910255116
+    },
+    {
+      "feature": "watch_gyro_q25",
+      "importance": 0.0006387891579581549
+    },
+    {
+      "feature": "watch_gyro_x_std",
+      "importance": 0.00031697814171564436
+    },
+    {
+      "feature": "watch_gyro_z_mean",
+      "importance": 0.0003167132205775619
+    },
+    {
+      "feature": "phone_gyro_y_mean",
+      "importance": 0.00022259321090706732
+    },
+    {
+      "feature": "watch_gyro_y_mean",
+      "importance": 0.0
+    },
+    {
+      "feature": "watch_accel_y_max_abs",
+      "importance": 0.0
+    },
+    {
+      "feature": "watch_accel_x_mean",
+      "importance": 0.0
+    },
+    {
+      "feature": "watch_gyro_mean",
+      "importance": 0.0
+    }
+  ]
+}

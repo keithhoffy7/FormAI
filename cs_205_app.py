@@ -413,11 +413,27 @@ app.layout = dbc.Container(
 		dbc.Navbar(
 			dbc.Container(
 				[
-				dbc.NavbarBrand(
-					"FormAI - Exercise Form Analysis",
-					className="fs-4 fw-bold"
-				),
+					dbc.NavbarBrand(
+						"FormAI - Exercise Form Analysis",
+						className="fs-4 fw-bold"
+					),
 					dbc.NavbarToggler(id="navbar-toggler"),
+					dbc.Collapse(
+						dbc.Nav(
+							[
+								dbc.NavItem(
+									html.Div(
+										id="model-status-badge",
+										className="d-flex align-items-center"
+									)
+								)
+							],
+							className="ms-auto",
+							navbar=True
+						),
+						id="navbar-collapse",
+						navbar=True
+					)
 				],
 				fluid=True
 			),
@@ -426,7 +442,96 @@ app.layout = dbc.Container(
 			className="mb-4 shadow"
 		),
 		
-		# Main content
+		# Classification Control Panel
+		dbc.Row(
+			[
+				dbc.Col(
+					[
+						dbc.Card(
+							[
+								dbc.CardHeader(
+									html.Div(
+										[
+											html.Span("🏋️ Form Classification", className="me-2"),
+											html.Small(
+												"Click 'Start Recording', perform your exercise, then click 'Stop & Classify'",
+												className="text-white-50 d-block mt-1"
+											)
+										]
+									),
+									className="bg-dark text-white fw-bold"
+								),
+								dbc.CardBody(
+									[
+										dbc.Row(
+											[
+												dbc.Col(
+													[
+														dbc.Button(
+															"🔴 Start Recording",
+															id="start-classify-btn",
+															color="success",
+															className="me-2 mb-2 w-100",
+															size="lg",
+															disabled=False
+														),
+														dbc.Button(
+															"⏹️ Stop & Classify",
+															id="stop-classify-btn",
+															color="danger",
+															className="mb-2 w-100",
+															size="lg",
+															disabled=True
+														),
+														html.Div(
+															[
+																html.Small("Recording Duration: ", className="text-muted"),
+																html.Strong(id="recording-timer", children="0.0s", className="text-primary")
+															],
+															className="mt-2 text-center"
+														),
+														html.Div(
+															[
+																html.Small("Data Points: ", className="text-muted"),
+																html.Strong(id="data-point-count", children="0", className="text-info")
+															],
+															className="mt-1 text-center"
+														)
+													],
+													md=4
+												),
+												dbc.Col(
+													[
+														html.Div(
+															id="classification-status",
+															children=html.Div([
+																html.P("⏳ Waiting for sensor data...", className="text-warning mb-1"),
+																html.Small("Connect your iPhone and Apple Watch to begin", className="text-muted")
+															]),
+															className="mb-2"
+														),
+														html.Div(id="classification-result")
+													],
+													md=8
+												)
+											]
+										)
+									]
+								)
+							],
+							className="mb-4 shadow-sm"
+						)
+					],
+					width=12
+				)
+			]
+		),
+		
+		# Section header for graphs
+		html.Hr(className="my-4"),
+		html.H4("📊 Real-Time Sensor Data", className="mb-3 text-secondary"),
+		
+		# Main content - Raw Data Graphs
 		dbc.Row(
 			[
 				dbc.Col(
@@ -529,66 +634,10 @@ app.layout = dbc.Container(
 			className="g-3"
 		),
 		
-		# Classification Control Panel
-		dbc.Row(
-			[
-				dbc.Col(
-					[
-						dbc.Card(
-							[
-								dbc.CardHeader(
-									"Form Classification",
-									className="bg-dark text-white fw-bold"
-								),
-								dbc.CardBody(
-									[
-										dbc.Row(
-											[
-												dbc.Col(
-													[
-														dbc.Button(
-															"🔴 Start Recording",
-															id="start-classify-btn",
-															color="success",
-															className="me-2 mb-2",
-															size="lg",
-															disabled=False
-														),
-														dbc.Button(
-															"⏹️ Stop & Classify",
-															id="stop-classify-btn",
-															color="danger",
-															className="mb-2",
-															size="lg",
-															disabled=True
-														)
-													],
-													md=6
-												),
-												dbc.Col(
-													[
-														html.Div(id="classification-status", className="mb-2"),
-														html.Div(id="classification-result")
-													],
-													md=6
-												)
-											]
-										)
-									]
-								)
-							],
-							className="mb-4 shadow-sm"
-						)
-					],
-					width=12
-				)
-			]
-		),
-		
 		# Hidden interval component for auto-updates
 		dcc.Interval(id="counter", interval=UPDATE_FREQ_MS),
 		# Hidden store for recording state
-		dcc.Store(id="recording-state-store", data={"is_recording": False}),
+		dcc.Store(id="recording-state-store", data={"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}),
 	],
 	fluid=True,
 	className="py-4"
@@ -760,32 +809,135 @@ def update_graph(_counter):
 	return iphone_accel_graph, iphone_gyro_graph, watch_accel_graph, watch_gyro_graph
 
 
+def check_data_available():
+	"""Check if data is being received from at least one device."""
+	# Check if we have recent data (within last 5 seconds)
+	now = datetime.now()
+	recent_threshold = 5.0  # seconds
+	
+	# Check iPhone data
+	iphone_has_data = False
+	if len(iphone_time_accel) > 0:
+		last_time = iphone_time_accel[-1]
+		if isinstance(last_time, datetime):
+			elapsed = (now - last_time).total_seconds()
+			if elapsed < recent_threshold:
+				iphone_has_data = True
+	if not iphone_has_data and len(iphone_time_gyro) > 0:
+		last_time = iphone_time_gyro[-1]
+		if isinstance(last_time, datetime):
+			elapsed = (now - last_time).total_seconds()
+			if elapsed < recent_threshold:
+				iphone_has_data = True
+	
+	# Check Apple Watch data
+	watch_has_data = False
+	if len(watch_time_accel) > 0:
+		last_time = watch_time_accel[-1]
+		if isinstance(last_time, datetime):
+			elapsed = (now - last_time).total_seconds()
+			if elapsed < recent_threshold:
+				watch_has_data = True
+	if not watch_has_data and len(watch_time_gyro) > 0:
+		last_time = watch_time_gyro[-1]
+		if isinstance(last_time, datetime):
+			elapsed = (now - last_time).total_seconds()
+			if elapsed < recent_threshold:
+				watch_has_data = True
+	
+	return iphone_has_data or watch_has_data
+
+
+@app.callback(
+	Output("model-status-badge", "children"),
+	Input("counter", "n_intervals"),
+	prevent_initial_call=False
+)
+def update_model_status_badge(_):
+	"""Update model status badge in navbar."""
+	global model_loaded
+	return dbc.Badge(
+		"✅ Model Loaded" if model_loaded else "⚠️ No Model",
+		color="success" if model_loaded else "warning",
+		className="ms-2"
+	)
+
+
+
+
 @app.callback(
 	[
 		Output("start-classify-btn", "disabled"),
 		Output("stop-classify-btn", "disabled"),
 		Output("classification-status", "children"),
-		Output("recording-state-store", "data")
+		Output("recording-state-store", "data"),
+		Output("recording-timer", "children"),
+		Output("data-point-count", "children")
 	],
 	[
 		Input("start-classify-btn", "n_clicks"),
-		Input("stop-classify-btn", "n_clicks")
+		Input("stop-classify-btn", "n_clicks"),
+		Input("counter", "n_intervals")
 	],
 	[State("recording-state-store", "data")],
-	prevent_initial_call=True
+	prevent_initial_call=False
 )
-def handle_recording_controls(start_clicks, stop_clicks, recording_state):
+def handle_recording_controls(start_clicks, stop_clicks, counter, recording_state):
 	global is_recording, recording_data
 	
 	ctx = dash.callback_context
 	if not ctx.triggered:
-		return False, True, html.Div("Ready to record", className="text-muted"), {"is_recording": False}
+		# Initial page load
+		data_available = check_data_available()
+		if data_available:
+			status = html.Div([
+				html.P("Ready to record", className="text-muted mb-1"),
+				html.Small("Click 'Start Recording' to begin", className="text-muted")
+			])
+		else:
+			status = html.Div([
+				html.P("⏳ Waiting for sensor data...", className="text-warning mb-1"),
+				html.Small("Connect your iPhone and Apple Watch to begin", className="text-muted")
+			])
+		return not data_available, True, status, {"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
 	
 	trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
 	current_state = recording_state.get("is_recording", False) if recording_state else False
+	start_time = recording_state.get("start_time") if recording_state else None
+	# Get stored final values (persist after stop)
+	stored_final_timer = recording_state.get("final_timer", "0.0s") if recording_state else "0.0s"
+	stored_final_count = recording_state.get("final_count", "0") if recording_state else "0"
 	
+	# Check if data is available (for enabling/disabling start button)
+	data_available = check_data_available()
+	
+	# Calculate timer and data points if recording
+	# Use global is_recording flag to ensure we stop immediately when stop is clicked
+	timer_text = "0.0s"
+	data_count = 0
+	if is_recording and current_state and start_time:
+		elapsed = (datetime.now() - datetime.fromtimestamp(start_time)).total_seconds()
+		timer_text = f"{elapsed:.1f}s"
+		# Count data points
+		for sensor in recording_data.values():
+			data_count += len(sensor.get("time", []))
+	
+	# Handle button clicks
 	if trigger_id == "start-classify-btn":
-		# Start recording
+		# Prevent starting if already recording
+		if is_recording or current_state:
+			status = dbc.Alert("🔴 Already recording. Stop current recording first.", color="warning", className="mb-0")
+			return True, False, status, recording_state, timer_text, str(data_count)
+		
+		# Check if we have any data at all (more lenient check for starting)
+		has_any_data = (len(iphone_time_accel) > 0 or len(iphone_time_gyro) > 0 or 
+		                len(watch_time_accel) > 0 or len(watch_time_gyro) > 0)
+		
+		if not has_any_data and not data_available:
+			status = dbc.Alert("⚠️ No sensor data detected. Please ensure your devices are connected and sending data.", color="warning", className="mb-0")
+			return False, True, status, {"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
+		
+		# Start recording - reset timer and count
 		is_recording = True
 		recording_data = {
 			"phone_accel": {"time": [], "x": [], "y": [], "z": []},
@@ -793,16 +945,69 @@ def handle_recording_controls(start_clicks, stop_clicks, recording_state):
 			"watch_accel": {"time": [], "x": [], "y": [], "z": []},
 			"watch_gyro": {"time": [], "x": [], "y": [], "z": []}
 		}
+		start_timestamp = datetime.now().timestamp()
 		status = dbc.Alert("🔴 Recording... Do your lift now!", color="danger", className="mb-0")
-		return True, False, status, {"is_recording": True}
+		return True, False, status, {"is_recording": True, "start_time": start_timestamp, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
 	
 	elif trigger_id == "stop-classify-btn":
 		# Stop recording and classify
 		is_recording = False
+		# Calculate final timer and count before stopping
+		final_timer = "0.0s"
+		final_count = 0
+		if start_time:
+			elapsed = (datetime.now() - datetime.fromtimestamp(start_time)).total_seconds()
+			final_timer = f"{elapsed:.1f}s"
+			for sensor in recording_data.values():
+				final_count += len(sensor.get("time", []))
 		status = dbc.Alert("⏳ Classifying...", color="info", className="mb-0")
-		return False, True, status, {"is_recording": False}
+		# Store final values in state so they persist
+		return False, True, status, {"is_recording": False, "start_time": None, "final_timer": final_timer, "final_count": str(final_count)}, final_timer, str(final_count)
 	
-	return not current_state, current_state, html.Div("Ready", className="text-muted"), {"is_recording": current_state}
+	# Update timer and count during recording (triggered by counter interval)
+	# Only update if actually recording (check global is_recording flag)
+	# Also check if we just started (is_recording True but state might not be updated yet)
+	if trigger_id == "counter":
+		if is_recording:
+			# We're recording - update timer and status
+			# Use start_time from state if available, otherwise we just started
+			actual_start_time = start_time if start_time else datetime.now().timestamp()
+			if start_time:
+				elapsed = (datetime.now() - datetime.fromtimestamp(actual_start_time)).total_seconds()
+				timer_text = f"{elapsed:.1f}s"
+				# Count data points
+				data_count = 0
+				for sensor in recording_data.values():
+					data_count += len(sensor.get("time", []))
+			
+			# Update state if it wasn't set yet
+			if not current_state or not start_time:
+				recording_state = {"is_recording": True, "start_time": actual_start_time, "final_timer": "0.0s", "final_count": "0"}
+			
+			status = dbc.Alert("🔴 Recording... Do your lift now!", color="danger", className="mb-0")
+			# Ensure button states are correct
+			return True, False, status, recording_state, timer_text, str(data_count)
+		else:
+			# Not recording - use stored final values if available, otherwise show 0
+			if data_available:
+				status = html.Div([
+					html.P("Ready to record", className="text-muted mb-1"),
+					html.Small("Click 'Start Recording' to begin", className="text-muted")
+				])
+			else:
+				status = html.Div([
+					html.P("⏳ Waiting for sensor data...", className="text-warning mb-1"),
+					html.Small("Connect your iPhone and Apple Watch to begin", className="text-muted")
+				])
+			# Preserve final timer and count from previous recording
+			return not data_available, current_state, status, recording_state, stored_final_timer, stored_final_count
+	
+	# Default return (shouldn't reach here)
+	status_msg = "Ready to record" if data_available else "Waiting for sensor data..."
+	# Use stored final values if not recording, otherwise use current timer
+	display_timer = stored_final_timer if not is_recording and not current_state else timer_text
+	display_count = stored_final_count if not is_recording and not current_state else str(data_count)
+	return not data_available, current_state, html.Div(status_msg, className="text-muted"), {"is_recording": current_state, "start_time": start_time, "final_timer": stored_final_timer, "final_count": stored_final_count}, display_timer, display_count
 
 
 @app.callback(
@@ -824,23 +1029,48 @@ def classify_on_stop(stop_clicks):
 	if prediction is None:
 		return dbc.Alert(f"❌ {message}", color="danger", className="mb-0")
 	
-	# Format result
-	if prediction == "good":
-		color = "success"
-		icon = "✅"
-		title = "Good Form!"
-	else:
-		color = "warning"
-		icon = "⚠️"
-		title = "Needs Improvement"
+	# Format result with personalized feedback for each class
+	feedback_messages = {
+		"good": {
+			"color": "success",
+			"icon": "✅",
+			"title": "Excellent Form!",
+			"advice": "Keep up the great work! Your form looks perfect."
+		},
+		"flared_elbow": {
+			"color": "warning",
+			"icon": "⚠️",
+			"title": "Flared Elbow Detected",
+			"advice": "Elbow flared. Keep elbow closer to body."
+		},
+		"swing_elbow": {
+			"color": "warning",
+			"icon": "⚠️",
+			"title": "Swinging Elbow Detected",
+			"advice": "Elbow is swinging. Try to keep your elbow stationary as you do the curl."
+		},
+		"too_fast": {
+			"color": "warning",
+			"icon": "⚠️",
+			"title": "Movement Too Fast",
+			"advice": "Doing curl too fast. Slow down pace and focus on controlled tempo."
+		}
+	}
+	
+	feedback = feedback_messages.get(prediction, {
+		"color": "warning",
+		"icon": "⚠️",
+		"title": "Needs Improvement",
+		"advice": "Focus on maintaining proper form throughout the movement."
+	})
 	
 	return dbc.Alert(
 		[
-			html.H5(f"{icon} {title}", className="mb-2"),
-			html.P(f"Prediction: {prediction.upper()}", className="mb-1"),
-			html.P(message, className="mb-0 small")
+			html.H5(f"{feedback['icon']} {feedback['title']}", className="mb-2"),
+			html.P(feedback['advice'], className="mb-2"),
+			html.P(f"Confidence: {message}", className="mb-0 small text-muted")
 		],
-		color=color,
+		color=feedback['color'],
 		className="mb-0"
 	)
 

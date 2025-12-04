@@ -149,7 +149,7 @@ def prepare_training_data(data_dir="data"):
     
     print(f"✅ Loaded {len(samples)} samples")
     
-    # Count by label
+    # Count by label (keep all classes separate for personalized feedback)
     from collections import Counter
     label_counts = Counter(labels)
     print(f"   Label distribution: {dict(label_counts)}")
