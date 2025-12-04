@@ -884,60 +884,43 @@ def update_model_status_badge(_):
 )
 def handle_recording_controls(start_clicks, stop_clicks, counter, recording_state):
 	global is_recording, recording_data
-	
+	# Normalize recording_state
+	if recording_state is None:
+		recording_state = {"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}
+	else:
+		recording_state.setdefault("is_recording", False)
+		recording_state.setdefault("start_time", None)
+		recording_state.setdefault("final_timer", "0.0s")
+		recording_state.setdefault("final_count", "0")
+
 	ctx = dash.callback_context
+	current_state = recording_state["is_recording"]
+	start_time = recording_state["start_time"]
+	stored_final_timer = recording_state["final_timer"]
+	stored_final_count = recording_state["final_count"]
+
+	# Initial page load: everything idle and ready
 	if not ctx.triggered:
-		# Initial page load
-		data_available = check_data_available()
-		if data_available:
-			status = html.Div([
-				html.P("Ready to record", className="text-muted mb-1"),
-				html.Small("Click 'Start Recording' to begin", className="text-muted")
-			])
-		else:
-			status = html.Div([
-				html.P("⏳ Waiting for sensor data...", className="text-warning mb-1"),
-				html.Small("Connect your iPhone and Apple Watch to begin", className="text-muted")
-			])
-		return not data_available, True, status, {"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
-	
+		status = html.Div([
+			html.P("Ready to record", className="text-muted mb-1"),
+			html.Small("Click 'Start Recording' to begin", className="text-muted")
+		])
+		return False, True, status, recording_state, "0.0s", "0"
+
 	trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
-	current_state = recording_state.get("is_recording", False) if recording_state else False
-	start_time = recording_state.get("start_time") if recording_state else None
-	# Get stored final values (persist after stop)
-	stored_final_timer = recording_state.get("final_timer", "0.0s") if recording_state else "0.0s"
-	stored_final_count = recording_state.get("final_count", "0") if recording_state else "0"
-	
-	# Check if data is available (for enabling/disabling start button)
-	data_available = check_data_available()
-	
-	# Calculate timer and data points if recording
-	# Use global is_recording flag to ensure we stop immediately when stop is clicked
-	timer_text = "0.0s"
-	data_count = 0
-	if is_recording and current_state and start_time:
-		elapsed = (datetime.now() - datetime.fromtimestamp(start_time)).total_seconds()
-		timer_text = f"{elapsed:.1f}s"
-		# Count data points
+
+	# Helper to compute current timer/count from globals
+	def _compute_timer_and_count(start_ts):
+		if not start_ts:
+			return "0.0s", "0"
+		elapsed = (datetime.now() - datetime.fromtimestamp(start_ts)).total_seconds()
+		data_count = 0
 		for sensor in recording_data.values():
 			data_count += len(sensor.get("time", []))
-	
-	# Handle button clicks
+		return f"{elapsed:.1f}s", str(data_count)
+
+	# START pressed: always start a fresh recording session
 	if trigger_id == "start-classify-btn":
-		# Prevent starting if already recording
-		if is_recording or current_state:
-			status = dbc.Alert("🔴 Already recording. Stop current recording first.", color="warning", className="mb-0")
-			return True, False, status, recording_state, timer_text, str(data_count)
-		
-		# Check if we have any data at all (more lenient check for starting)
-		has_any_data = (len(iphone_time_accel) > 0 or len(iphone_time_gyro) > 0 or 
-		                len(watch_time_accel) > 0 or len(watch_time_gyro) > 0)
-		
-		if not has_any_data and not data_available:
-			status = dbc.Alert("⚠️ No sensor data detected. Please ensure your devices are connected and sending data.", color="warning", className="mb-0")
-			return False, True, status, {"is_recording": False, "start_time": None, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
-		
-		# Start recording - reset timer and count
 		is_recording = True
 		recording_data = {
 			"phone_accel": {"time": [], "x": [], "y": [], "z": []},
@@ -946,68 +929,50 @@ def handle_recording_controls(start_clicks, stop_clicks, counter, recording_stat
 			"watch_gyro": {"time": [], "x": [], "y": [], "z": []}
 		}
 		start_timestamp = datetime.now().timestamp()
+		new_state = {
+			"is_recording": True,
+			"start_time": start_timestamp,
+			"final_timer": "0.0s",
+			"final_count": "0"
+		}
 		status = dbc.Alert("🔴 Recording... Do your lift now!", color="danger", className="mb-0")
-		return True, False, status, {"is_recording": True, "start_time": start_timestamp, "final_timer": "0.0s", "final_count": "0"}, "0.0s", "0"
-	
-	elif trigger_id == "stop-classify-btn":
-		# Stop recording and classify
+		# Disable Start, enable Stop, reset timer/count
+		return True, False, status, new_state, "0.0s", "0"
+
+	# STOP pressed: stop immediately and freeze timer/count for this run
+	if trigger_id == "stop-classify-btn":
+		# Stop recording in the global flag so /data stops appending
 		is_recording = False
-		# Calculate final timer and count before stopping
-		final_timer = "0.0s"
-		final_count = 0
-		if start_time:
-			elapsed = (datetime.now() - datetime.fromtimestamp(start_time)).total_seconds()
-			final_timer = f"{elapsed:.1f}s"
-			for sensor in recording_data.values():
-				final_count += len(sensor.get("time", []))
+
+		final_timer, final_count = _compute_timer_and_count(start_time)
+		new_state = {
+			"is_recording": False,
+			"start_time": None,
+			"final_timer": final_timer,
+			"final_count": final_count
+		}
 		status = dbc.Alert("⏳ Classifying...", color="info", className="mb-0")
-		# Store final values in state so they persist
-		return False, True, status, {"is_recording": False, "start_time": None, "final_timer": final_timer, "final_count": str(final_count)}, final_timer, str(final_count)
-	
-	# Update timer and count during recording (triggered by counter interval)
-	# Only update if actually recording (check global is_recording flag)
-	# Also check if we just started (is_recording True but state might not be updated yet)
+		# Re‑enable Start for the next run, disable Stop
+		return False, True, status, new_state, final_timer, final_count
+
+	# Counter tick: update timer/count live while recording, otherwise show last run
 	if trigger_id == "counter":
-		if is_recording:
-			# We're recording - update timer and status
-			# Use start_time from state if available, otherwise we just started
-			actual_start_time = start_time if start_time else datetime.now().timestamp()
-			if start_time:
-				elapsed = (datetime.now() - datetime.fromtimestamp(actual_start_time)).total_seconds()
-				timer_text = f"{elapsed:.1f}s"
-				# Count data points
-				data_count = 0
-				for sensor in recording_data.values():
-					data_count += len(sensor.get("time", []))
-			
-			# Update state if it wasn't set yet
-			if not current_state or not start_time:
-				recording_state = {"is_recording": True, "start_time": actual_start_time, "final_timer": "0.0s", "final_count": "0"}
-			
+		if is_recording and current_state and start_time:
+			timer_text, data_count = _compute_timer_and_count(start_time)
 			status = dbc.Alert("🔴 Recording... Do your lift now!", color="danger", className="mb-0")
-			# Ensure button states are correct
-			return True, False, status, recording_state, timer_text, str(data_count)
+			# Ensure Start disabled and Stop enabled while recording
+			return True, False, status, recording_state, timer_text, data_count
 		else:
-			# Not recording - use stored final values if available, otherwise show 0
-			if data_available:
-				status = html.Div([
-					html.P("Ready to record", className="text-muted mb-1"),
-					html.Small("Click 'Start Recording' to begin", className="text-muted")
-				])
-			else:
-				status = html.Div([
-					html.P("⏳ Waiting for sensor data...", className="text-warning mb-1"),
-					html.Small("Connect your iPhone and Apple Watch to begin", className="text-muted")
-				])
-			# Preserve final timer and count from previous recording
-			return not data_available, current_state, status, recording_state, stored_final_timer, stored_final_count
-	
-	# Default return (shouldn't reach here)
-	status_msg = "Ready to record" if data_available else "Waiting for sensor data..."
-	# Use stored final values if not recording, otherwise use current timer
-	display_timer = stored_final_timer if not is_recording and not current_state else timer_text
-	display_count = stored_final_count if not is_recording and not current_state else str(data_count)
-	return not data_available, current_state, html.Div(status_msg, className="text-muted"), {"is_recording": current_state, "start_time": start_time, "final_timer": stored_final_timer, "final_count": stored_final_count}, display_timer, display_count
+			# Not recording: show ready state but keep last run's numbers
+			status = html.Div([
+				html.P("Ready to record", className="text-muted mb-1"),
+				html.Small("Click 'Start Recording' to begin", className="text-muted")
+			])
+			return False, True, status, recording_state, stored_final_timer, stored_final_count
+
+	# Fallback: keep whatever state we have
+	status = html.Div("Ready to record", className="text-muted")
+	return False, not is_recording, status, recording_state, stored_final_timer, stored_final_count
 
 
 @app.callback(
